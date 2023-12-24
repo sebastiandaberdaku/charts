@@ -1,0 +1,18 @@
+{{- if .Values.service.create -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spark.serviceName" . }}
+  labels:
+    {{- include "spark.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  sessionAffinity: ClientIP
+  selector:
+    {{- include "spark.selectorLabels" . | nindent 4 }}
+{{- end }}

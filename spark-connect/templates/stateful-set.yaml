@@ -1,0 +1,184 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "spark.fullname" . }}
+  labels:
+    {{- include "spark.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spark.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "spark.selectorLabels" . | nindent 8 }}
+        spark-driver-affinity-id: {{ uuidv4 | quote }}
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "spark.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: executor-pod-template
+          configMap:
+            name: executor-pod-template
+            items:
+              - key: executor-pod-template.yaml.template
+                path: executor-pod-template.yaml.template
+        - name: spark-properties
+          configMap:
+            name: spark-properties
+            items:
+              - key: spark-properties.conf.template
+                path: spark-properties.conf.template
+        {{- with .Values.spark.driver.ephemeralLocalVolume }}
+        - name: "spark-local-dir-{{ .name }}"
+          ephemeral:
+            volumeClaimTemplate:
+              metadata:
+                labels:
+                  type: ephemeral
+                  storageClass: {{ .storageClass }}
+              spec:
+                accessModes: [ "ReadWriteOnce" ]
+                storageClassName: {{ .storageClass | quote }}
+                resources:
+                  requests:
+                    storage: "{{ .storageGiB }}Gi"
+        {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: SPARK_DRIVER_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: SPARK_DRIVER_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SPARK_DRIVER_AFFINITY_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['spark-driver-affinity-id']
+            - name: SPARK_EXECUTOR_AFFINITY_ID
+              value: {{ uuidv4 | quote }}
+            - name: SPARK_NO_DAEMONIZE
+              value: "true"
+            - name: SPARK_LOCAL_DIRS
+              value: {{ .Values.spark.scratchDir }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command:
+          {{- if .Values.command }}
+            {{- toYaml .Values.command | nindent 12 }}
+          {{- else }}
+            - "/bin/bash"
+            - "-c"
+          {{- end }}
+          args:
+            - >-
+              envsubst < /opt/spark/conf/spark-properties.conf.template > /opt/spark/spark-properties.conf &&
+              envsubst < /opt/spark/conf/executor-pod-template.yaml.template > /opt/spark/executor-pod-template.yaml &&
+              /opt/entrypoint.sh
+              /opt/spark/sbin/start-connect-server.sh --properties-file /opt/spark/spark-properties.conf
+            {{- with .Values.extraArgs }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: spark-ui
+              containerPort: {{ .Values.containerPorts.sparkUi }}
+              protocol: TCP
+            - name: spark-connect
+              containerPort: {{ .Values.containerPorts.sparkConnect }}
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+            httpGet:
+              path: /
+              port: spark-ui
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+            httpGet:
+              path: /
+              port: spark-ui
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - "/opt/spark/sbin/stop-connect-server.sh"
+          volumeMounts:
+            - name: executor-pod-template
+              mountPath: /opt/spark/conf/executor-pod-template.yaml.template
+              subPath: executor-pod-template.yaml.template
+            - name: spark-properties
+              mountPath: /opt/spark/conf/spark-properties.conf.template
+              subPath: spark-properties.conf.template
+            {{- with .Values.spark.driver.ephemeralLocalVolume }}
+            - name: "spark-local-dir-{{ .name }}"
+              mountPath: {{ $.Values.spark.scratchDir }}
+            {{- end }}
+          resources:
+            requests:
+              cpu: {{ .Values.spark.driver.cores }}
+              memory: "{{ add .Values.spark.driver.memoryMiB .Values.spark.driver.memoryOverheadMiB }}Mi"
+            limits:
+              memory: "{{ add .Values.spark.driver.memoryMiB .Values.spark.driver.memoryOverheadMiB }}Mi"
+      {{- with .Values.spark.driver.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: spark-role
+                      operator: In
+                      values:
+                        - driver
+                topologyKey: topology.kubernetes.io/zone
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: spark-role
+                      operator: In
+                      values:
+                        - driver
+                topologyKey: kubernetes.io/hostname
+      {{- with .Values.spark.driver.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

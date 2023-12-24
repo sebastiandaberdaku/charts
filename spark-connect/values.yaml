@@ -1,0 +1,93 @@
+# Default values for spark.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: sebastiandaberdaku/spark-glue-python
+  pullPolicy: Always
+  tag: spark-v3.5.0-python-v3.10.12
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+spark:
+  dynamoDBLogStore: {}
+#    tableName:
+#    region: eu-central-1
+  eventLog:
+    enabled: false
+    # s3 url where to save logs
+    dir: "s3://spark-logs-bucket/spark-connect-logs/"
+  awsRegion: eu-central-1
+  awsRoleArn: "arn:aws:iam::123456789012:role/spark-connect-irsa"
+  driver:
+    cores: 1
+    memoryMiB: 2048
+    memoryOverheadMiB: 384
+    ephemeralLocalVolume: {}
+#      name: ephemeral
+#      storageClass: nvme-ssd
+#      storageGiB: 100
+    nodeSelector: {}
+#      dedicated: spark-connect-driver
+    tolerations: []
+#      - key: dedicated
+#        value: spark-connect-driver
+  executor:
+    cores: 8
+    requestCoresMilliCPU: 4000
+    memoryMiB: 4096
+    memoryOverheadMiB: 512
+    ephemeralLocalVolume: {}
+#      name: ephemeral
+#      storageClass: nvme-ssd
+#      storageGiB: 100
+    minExecutors: 1
+    maxExecutors: 4
+    nodeSelector: {}
+#      dedicated: spark-connect-executors
+    tolerations: []
+#      - key: dedicated
+#        value: spark-connect-executors
+  scratchDir: /tmp
+  kubernetesEndpoint: "https://kubernetes.default.svc.cluster.local:443"
+  packages: []
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "spark-connect"
+  automountServiceAccountToken: true
+
+service:
+  # Specifies whether a service should be created
+  create: true
+  # Annotations to add to the service
+  annotations: {}
+  # The name of the service to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "spark-connect"
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  runAsUser: 185
+  runAsGroup: 185
+
+command: []
+extraArgs: []
+extraEnv: []
+
+containerPorts:
+  sparkUi: 4040
+  sparkConnect: 15002

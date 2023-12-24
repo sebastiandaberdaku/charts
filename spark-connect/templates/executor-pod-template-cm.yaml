@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: executor-pod-template
+  labels:
+    {{- include "spark.labels" . | nindent 4 }}
+data:
+  executor-pod-template.yaml.template: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: spark-kubernetes-executor
+      labels:
+        app.kubernetes.io/instance: {{ include "spark.name" . }}-executor
+        spark-role: executor
+        spark-executor-affinity-id: ${SPARK_EXECUTOR_AFFINITY_ID}
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+      {{- with .Values.spark.executor.ephemeralLocalVolume }}
+      volumes:
+        - name: "spark-local-dir-{{ .name }}"
+          ephemeral:
+            volumeClaimTemplate:
+              metadata:
+                labels:
+                  type: ephemeral
+                  storageClass: {{ .storageClass }}
+              spec:
+                accessModes: [ "ReadWriteOnce" ]
+                storageClassName: {{ .storageClass | quote }}
+                resources:
+                  requests:
+                    storage: "{{ .storageGiB }}Gi"
+      {{- end }}
+      containers:
+        - name: spark-kubernetes-executor
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SPARK_EXECUTOR_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: SPARK_EXECUTOR_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          {{- with .Values.spark.executor.ephemeralLocalVolume }}
+          volumeMounts:
+            - name: "spark-local-dir-{{ .name }}"
+              mountPath: {{ $.Values.spark.scratchDir }}
+          {{- end }}
+      {{- with .Values.spark.executor.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            # all executor pods must be spawned in the same availability zone
+            - labelSelector:
+                matchExpressions:
+                  - key: spark-executor-affinity-id
+                    operator: In
+                    values:
+                      - ${SPARK_EXECUTOR_AFFINITY_ID}
+              topologyKey: topology.kubernetes.io/zone
+          preferredDuringSchedulingIgnoredDuringExecution:
+            # try to spawn executors on the same node as the driver pod
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: spark-driver-affinity-id
+                    operator: In
+                    values:
+                      - ${SPARK_DRIVER_AFFINITY_ID}
+                topologyKey: kubernetes.io/hostname
+            # otherwise, try to spawn executors on the same node as the other executor pods
+            - weight: 75
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: spark-executor-affinity-id
+                    operator: In
+                    values:
+                      - ${SPARK_EXECUTOR_AFFINITY_ID}
+                topologyKey: kubernetes.io/hostname
+            # otherwise, try to spawn executors in the same availability zone as the driver pod
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: spark-driver-affinity-id
+                    operator: In
+                    values:
+                      - ${SPARK_DRIVER_AFFINITY_ID}
+                topologyKey: topology.kubernetes.io/zone
+      {{- with .Values.spark.executor.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

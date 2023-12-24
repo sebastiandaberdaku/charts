@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-properties
+  labels:
+    {{- include "spark.labels" . | nindent 4 }}
+data:
+  spark-properties.conf.template: |-
+    spark.hadoop.parquet.block.size 33554432
+    spark.connect.grpc.binding.port {{ .Values.containerPorts.sparkConnect }}
+    spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
+    spark.databricks.delta.optimize.repartition.enabled true
+    spark.databricks.delta.properties.defaults.dataSkippingNumIndexedCols -1
+    spark.databricks.delta.replaceWhere.constraintCheck.enabled false
+    spark.databricks.delta.replaceWhere.dataColumns.enabled true
+    spark.databricks.delta.schema.autoMerge.enabled false
+    spark.decommission.enabled true
+    spark.delta.logStore.s3.impl io.delta.storage.S3DynamoDBLogStore
+    spark.delta.logStore.s3a.impl io.delta.storage.S3DynamoDBLogStore
+    spark.driver.cores {{ .Values.spark.driver.cores }}
+    spark.driver.extraClassPath /opt/spark/jars/*
+    spark.driver.extraJavaOptions -XX:+ExitOnOutOfMemoryError -XX:+UseCompressedOops -XX:+UseG1GC
+    spark.driver.extraLibraryPath /opt/hadoop/lib/native
+    spark.driver.host ${SPARK_DRIVER_HOST}
+    spark.driver.maxResultSize 4g
+    spark.driver.memory {{ .Values.spark.driver.memoryMiB }}m
+    spark.driver.memoryOverhead {{ .Values.spark.driver.memoryOverheadMiB }}m
+    spark.dynamicAllocation.cachedExecutorIdleTimeout 600s
+    spark.dynamicAllocation.enabled true
+    spark.dynamicAllocation.executorAllocationRatio	1
+    spark.dynamicAllocation.executorIdleTimeout	300s
+    spark.dynamicAllocation.maxExecutors {{ .Values.spark.executor.maxExecutors }}
+    spark.dynamicAllocation.minExecutors {{ .Values.spark.executor.minExecutors }}
+    spark.dynamicAllocation.schedulerBacklogTimeout	1s
+    spark.dynamicAllocation.shuffleTracking.enabled	true
+    spark.dynamicAllocation.shuffleTracking.timeout	600s
+    spark.dynamicAllocation.sustainedSchedulerBacklogTimeout 5s
+    spark.eventLog.enabled {{ .Values.spark.eventLog.enabled }}
+    {{- if .Values.spark.eventLog.enabled }}
+    spark.eventLog.compress false
+    spark.eventLog.compression.codecs zstd
+    spark.eventLog.dir {{ .Values.spark.eventLog.dir }}
+    spark.eventLog.logStageExecutorMetrics true
+    spark.eventLog.logBlockUpdates.enabled true
+    spark.eventLog.rolling.enabled true
+    spark.eventLog.rolling.maxFileSize 128m
+    {{- end }}
+    spark.executor.cores {{ .Values.spark.executor.cores }}
+    spark.executor.extraClassPath /opt/spark/jars/*
+    spark.executor.extraJavaOptions -XX:+ExitOnOutOfMemoryError -XX:+UseCompressedOops -XX:+UseG1GC
+    spark.executor.extraLibraryPath /opt/hadoop/lib/native
+    spark.executor.memory {{ .Values.spark.executor.memoryMiB }}m
+    spark.executor.memoryOverhead {{ .Values.spark.executor.memoryOverheadMiB }}m
+    spark.hadoop.aws.region {{ .Values.spark.awsRegion }}
+    spark.hadoop.delta.enableFastS3AListFrom true
+    spark.hadoop.fs.s3.impl org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.aws.credentials.provider com.amazonaws.auth.WebIdentityTokenCredentialsProvider
+    spark.hadoop.fs.s3a.experimental.input.fadvise random
+    spark.hadoop.fs.s3a.fast.upload true
+    spark.hadoop.fs.s3a.fast.upload.default true
+    spark.hadoop.fs.s3a.impl org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hive.imetastoreclient.factory.class com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory
+    {{- with .Values.spark.dynamoDBLogStore }}
+    spark.io.delta.storage.S3DynamoDBLogStore.ddb.region {{ .region }}
+    spark.io.delta.storage.S3DynamoDBLogStore.ddb.tableName {{ .tableName }}
+    {{- end }}
+    spark.jars.ivy {{ .Values.spark.scratchDir }}/.ivy
+    {{- with .Values.spark.packages }}
+    spark.jars.packages {{ join "," . }}
+    {{- end }}
+    spark.kubernetes.allocation.driver.readinessTimeout 60s
+    spark.kubernetes.authenticate.driver.serviceAccountName {{ include "spark.serviceAccountName" .  }}
+    spark.kubernetes.authenticate.executor.serviceAccountName {{ include "spark.serviceAccountName" .  }}
+    spark.kubernetes.authenticate.submission.caCertFile /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    spark.kubernetes.authenticate.submission.oauthTokenFile /var/run/secrets/kubernetes.io/serviceaccount/token
+    spark.kubernetes.container.image.pullPolicy {{ .Values.image.pullPolicy }}
+    spark.kubernetes.driver.pod.name ${SPARK_DRIVER_POD_NAME}
+    spark.kubernetes.executor.annotation.eks.amazonaws.com/role-arn {{ .Values.spark.awsRoleArn }}
+    spark.kubernetes.executor.container.image {{ .Values.image.repository }}:{{ .Values.image.tag }}
+    spark.kubernetes.executor.podTemplateFile /opt/spark/executor-pod-template.yaml
+    spark.kubernetes.executor.request.cores {{ .Values.spark.executor.requestCoresMilliCPU }}m
+    spark.kubernetes.local.dirs.tmpfs false
+    spark.kubernetes.namespace {{ .Release.Namespace }}
+    spark.local.dir {{ .Values.spark.scratchDir }}
+    spark.master k8s://{{ .Values.spark.kubernetesEndpoint }}
+    spark.network.timeout 300s
+    spark.serializer org.apache.spark.serializer.KryoSerializer
+    spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
+    spark.sql.catalogImplementation hive
+    spark.sql.execution.arrow.pyspark.enabled true
+    spark.sql.execution.arrow.pyspark.fallback.enabled true
+    spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
+    spark.sql.files.maxPartitionBytes 128MB
+    spark.sql.hive.metastore.jars builtin
+    spark.sql.parquet.datetimeRebaseModeInWrite CORRECTED
+    spark.ui.port {{ .Values.containerPorts.sparkUi }}
+    spark.ui.dagGraph.retainedRootRDDs 100
+    spark.ui.retainedJobs 100
+    spark.ui.retainedStages 100
+    spark.ui.retainedTasks 100
+    spark.worker.ui.retainedExecutors 100
+    spark.worker.ui.retainedDrivers	10
+    spark.sql.ui.retainedExecutions 100
+    spark.streaming.ui.retainedBatches 100
+    spark.ui.retainedDeadExecutors 10
+{{/*    spark.cleaner.periodicGC.interval 10min*/}}
