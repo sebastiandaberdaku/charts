@@ -1,11 +1,25 @@
 apiVersion: v1
 entries:
+  karpenter-extra:
+  - apiVersion: v2
+    appVersion: 1.0.3
+    created: "2023-12-27T09:41:37.168463135+01:00"
+    description: A chart for managing Karpenter NodeClasses and NodePools
+    digest: fe9c6dc89f7152563a53fc1fac46ba8e68aade292ac2ac80554b72a79088788b
+    maintainers:
+    - email: sebastiandaberdaku@gmail.com
+      name: Sebastian Daberdaku
+    name: karpenter-extra
+    type: application
+    urls:
+    - karpenter-extra-1.0.0.tgz
+    version: 1.0.0
   spark-connect:
   - apiVersion: v2
     appVersion: 3.5.0
-    created: "2023-12-24T16:52:41.6532753+01:00"
+    created: "2023-12-27T09:41:37.169118075+01:00"
     description: A Helm chart for deploying a Spark-Connect Server on Kubernetes
-    digest: 52f64015c1583f4da3f6e62bd1f4cbd488e6b20dbbd63b0da37343d136748905
+    digest: 3a08516ffe097f52cf1704ec704c00f59146e9363e7489d7c869c3038412c348
     maintainers:
     - email: sebastiandaberdaku@gmail.com
       name: Sebastian Daberdaku
@@ -14,4 +28,4 @@ entries:
     urls:
     - spark-connect-1.0.0.tgz
     version: 1.0.0
-generated: "2023-12-24T16:52:41.652054192+01:00"
+generated: "2023-12-27T09:41:37.167464811+01:00"

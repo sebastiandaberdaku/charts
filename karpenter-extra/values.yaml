@@ -1,0 +1,146 @@
+nameOverride: ""
+fullnameOverride: ""
+
+eksClusterName: "my-eks-cluster"
+
+nodeClasses: #{}
+  default:
+    amiFamily: AL2
+    detailedMonitoring: false
+    blockDeviceMappings:
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: 50Gi
+          volumeType: gp3
+          encrypted: true
+          deleteOnTermination: true
+    tags:
+      test: value
+      test2: value2
+    userData: |
+      #! /bin/bash
+      echo "Hello, World!"
+  large-ephemeral-storage:
+    detailedMonitoring: true
+    blockDeviceMappings:
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: 500Gi
+          volumeType: gp3
+          encrypted: true
+          deleteOnTermination: true
+  multi-pv-nvme-instance-store:
+    detailedMonitoring: true
+    blockDeviceMappings:
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: 50Gi
+          volumeType: gp3
+          encrypted: true
+          deleteOnTermination: true
+    userData: |
+      #! /bin/bash
+      # Install NVMe CLI
+      yum install nvme-cli -y
+      # Get a list of instance-store NVMe drives
+      nvme_drives=$(nvme list | grep "Amazon EC2 NVMe Instance Storage" | cut -d " " -f 1 || true)
+      readarray -t nvme_drives <<< "$nvme_drives"
+      for disk in "${nvme_drives[@]}"
+      do
+        # Format the disk to ext4
+        mkfs.ext4 -F $disk
+        # Get disk UUID
+        uuid=$(blkid -o value -s UUID $disk)
+        # Create a filesystem path to mount the disk
+        mount_location="/mnt/fast-disks/${uuid}"
+        mkdir -p $mount_location
+        # Mount the disk
+        mount $disk $mount_location
+        # Mount the disk during a reboot
+        echo $disk $mount_location ext4 defaults,noatime 0 2 >> /etc/fstab
+        # Set permissions for read-write-execute on $mount_location
+        chmod -R 0777 $mount_location
+      done
+  single-raid-pv-nvme-instance-store:
+    detailedMonitoring: true
+    blockDeviceMappings:
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: 50Gi
+          volumeType: gp3
+          encrypted: true
+          deleteOnTermination: true
+    userData: |
+      #! /bin/bash
+      # Install NVMe CLI
+      yum install nvme-cli -y
+      # Get list of NVMe Drives
+      nvme_drives=$(nvme list | grep "Amazon EC2 NVMe Instance Storage" | cut -d " " -f 1 || true)
+      readarray -t nvme_drives <<< "$nvme_drives"
+      num_drives=${#nvme_drives[@]}
+      # Install software RAID utility
+      yum install mdadm -y
+      # Create RAID-0 array across the instance store NVMe SSDs
+      mdadm --create /dev/md0 --level=0 --name=md0 --raid-devices=$num_drives "${nvme_drives[@]}"
+      # Format drive with Ext4
+      mkfs.ext4 /dev/md0
+      # Get RAID array's UUID
+      # uuid=$(blkid -o value -s UUID /dev/md0)
+      # Create a filesystem path to mount the disk
+      # mount_location="/mnt/fast-disks/${uuid}"
+      mount_location="/mnt/fast-disks"
+      mkdir -p $mount_location
+      # Mount RAID device
+      mount /dev/md0 $mount_location
+      # Have disk be mounted on reboot
+      mdadm --detail --scan >> /etc/mdadm.conf
+      echo /dev/md0 $mount_location ext4 defaults,noatime 0 2 >> /etc/fstab
+      # Set permissions for read-write-execute on $mount_location
+      chmod -R 0777 $mount_location
+nodePools: #{}
+   default:
+     nodeClassName: default
+     labels:
+       dedicated: my-workload
+     annotations:
+       annotate: this
+     taints:
+       - key: dedicated
+         operator: Equal
+         value: my-workload
+         effect: NoSchedule
+     startupTaints:
+       - key: example.com/another-taint
+         effect: NoSchedule
+     requirements:
+       - key: "karpenter.k8s.aws/instance-family"
+         operator: In
+         values: [c5, r5, m5]
+       - key: "karpenter.sh/capacity-type"
+         operator: In
+         values: [spot]
+     resourceLimits:
+       cpu: "10"
+       ram: "100Gi"
+     consolidationPolicy: WhenUnderutilized
+     consolidateAfter: 30s
+     expireAfter: 720h
+     weight: 10
+   equalizer:
+     nodeClassName: large-ephemeral-storage
+     labels:
+       dedicated: equalizer
+     requirements:
+       - key: "karpenter.k8s.aws/instance-family"
+         operator: In
+         values: [c5, r5, m5]
+       - key: "karpenter.sh/capacity-type"
+         operator: In
+         values: [spot]
+     resourceLimits:
+       cpu: "10"
+       ram: "100Gi"
+     consolidationPolicy: WhenUnderutilized
+     consolidateAfter: 30s
+     expireAfter: 720h
+     weight: 10
