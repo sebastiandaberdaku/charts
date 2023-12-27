@@ -1,0 +1,14 @@
+apiVersion: v2
+appVersion: "435"
+description: Fast distributed SQL query engine for big data analytics that helps you explore your data universe
+home: https://trino.io/
+icon: https://trino.io/assets/trino.png
+maintainers:
+  - name: Sebastian Daberdaku
+    email: sebastiandaberdaku@gmail.com
+name: trino
+sources:
+- https://github.com/trinodb/charts
+- https://github.com/trinodb/trino/tree/master/core/docker
+type: application
+version: 0.15.0

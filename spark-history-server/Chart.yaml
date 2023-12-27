@@ -1,0 +1,9 @@
+apiVersion: v2
+name: spark-history-server
+description: Spark History Server provides a web UI for completed and running Spark applications.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Sebastian Daberdaku
+    email: sebastiandaberdaku@gmail.com

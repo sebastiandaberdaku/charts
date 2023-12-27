@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "shs.fullname" . }}
+  labels:
+    release: {{ .Release.Name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    {{- include "shs.labels" . | nindent 4 }}
+roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: {{ include "shs.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.alb.serviceAccount }}
+    namespace: {{ .Values.alb.namespace }}

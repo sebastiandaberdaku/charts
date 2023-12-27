@@ -1,0 +1,18 @@
+{{- if .Values.logsVolume -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "trino.fullname" . }}-logs
+  labels:
+    {{- include "trino.labels" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- tpl (toYaml .Values.commonLabels) . | nindent 4 }}
+    {{- end }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ .Values.logsVolume.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.logsVolume.storageSize }}
+{{- end }}

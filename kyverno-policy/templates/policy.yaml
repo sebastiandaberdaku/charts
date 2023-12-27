@@ -1,0 +1,86 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: {{ include "kyverno-policy.fullname" . }}
+  labels:
+    {{- include "kyverno-policy.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    policies.kyverno.io/title: Add nodeSelectors and tolerations
+    policies.kyverno.io/category: Other
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    kyverno.io/kyverno-version: 1.7.1
+    policies.kyverno.io/minversion: 1.6.0
+    kyverno.io/kubernetes-version: "1.23"
+    policies.kyverno.io/description: >-
+      This policy adds adds a node selector and toleration to all the pods in the current namespace.
+      This ensures that the pods are assigned only to certain nodes.
+      The "dynamic-workload-node-selector-toleration" rule targets Pods with labels 'component=worker' and
+      'spark-role=executor' in the namespace of this Helm release. It dynamically adds tolerations and nodeSelectors to
+      matched Pods to guide Kubernetes in scheduling these Pods to specific Nodes.
+      The "static-workload-node-selector-toleration" rule targets all Pods in the namespace except those matched by the
+      previous rule. It applies preset tolerations and nodeSelectors to these Pods.
+spec:
+  rules:
+    - name: dynamic-workload-node-selector-toleration
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              selector:
+                matchLabels:
+                  component: worker
+          - resources:
+              kinds:
+                - Pod
+              selector:
+                matchLabels:
+                  spark-role: executor
+      mutate:
+        patchStrategicMerge:
+          spec:
+            {{- with .Values.dynamicWorkloadNodeSelector }}
+            nodeSelector:
+              {{- toYaml . | nindent 14}}
+            {{- end }}
+            {{- with .Values.dynamicWorkloadTolerations }}
+            tolerations:
+              {{- toYaml . | nindent 14}}
+            {{- end }}
+    {{- if or (not (empty .Values.staticWorkloadTolerations)) (not (empty .Values.staticWorkloadNodeSelector)) }}
+    - name: static-workload-node-selector-toleration
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              selector:
+                matchLabels:
+                  component: worker
+          - resources:
+              kinds:
+                - Pod
+              selector:
+                matchLabels:
+                  spark-role: executor
+      mutate:
+        patchStrategicMerge:
+          spec:
+            {{- with .Values.staticWorkloadNodeSelector }}
+            nodeSelector:
+              {{- toYaml . | nindent 14}}
+            {{- end }}
+            {{- with .Values.staticWorkloadTolerations }}
+            tolerations:
+              {{- toYaml . | nindent 14}}
+            {{- end }}
+    {{- end }}

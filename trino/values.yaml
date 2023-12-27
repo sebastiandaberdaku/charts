@@ -1,0 +1,383 @@
+# Default values for trino.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: trinodb/trino
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart version.
+  # Same value as Chart.yaml#appVersion
+  tag: 435
+
+imagePullSecrets:
+  - name: registry-credentials
+
+server:
+  workers: 2
+  node:
+    environment: production
+    dataDir: /data/trino
+    pluginDir: /usr/lib/trino/plugin
+  log:
+    trino:
+      level: INFO
+  config:
+    path: /etc/trino
+    http:
+      port: 8080
+    https:
+      enabled: false
+      port: 8443
+      keystore:
+        path: ""
+    # Trino supports multiple authentication types: PASSWORD, CERTIFICATE, OAUTH2, JWT, KERBEROS
+    # For more info: https://trino.io/docs/current/security/authentication-types.html
+    authenticationType: ""
+    query:
+      maxMemory: "43500MB"
+  exchangeManager:
+    name: "filesystem"
+    baseDir: "/tmp/trino-local-file-system-exchange-manager"
+  workerExtraConfig: ""
+  coordinatorExtraConfig: ""
+  autoscaling:
+    enabled: false
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 50
+
+accessControl: #{}
+  type: configmap
+  refreshPeriod: 60s
+  # Rules file is mounted to /etc/trino/access-control
+  configFile: "rules.json"
+  deltaLakeRules:
+    catalogs:
+      - user: admin
+        catalog: ".*"
+        allow: all
+      - user: no_admin
+        catalog: ".*"
+        allow: all
+    schemas:
+      - user: admin
+        owner: true
+        schema: ".*"
+      - user: no_admin
+        owner: false
+    tables: []
+  otherRules:
+    catalogs: []
+    schemas: []
+    tables: []
+
+additionalNodeProperties: {}
+
+additionalConfigProperties: {}
+
+additionalLogProperties: {}
+
+additionalExchangeManagerProperties: {}
+
+eventListenerProperties: {}
+
+sharedSecret: ""
+
+additionalCatalogs: {}
+#  equalizer-core-staging: |-
+#    connector.name=postgresql
+#    connection-url=${ENV:EQ_ST_JDBC_URL}
+#    connection-user=${ENV:EQ_ST_USERNAME}
+#    connection-password=${ENV:EQ_ST_PASSWORD}
+
+deltaLakeCatalogs: {}
+#  delta-de:
+#    glue_aws_region: eu-central-1
+#    glue_iam_role_arn: arn:aws:iam::123456789:role/glue-role
+#    s3_iam_role_arn: arn:aws:iam::123456789:role/s3-role
+
+defaultDeltaLakeCatalogProperties: |
+  hive.metastore=glue
+  hive.metastore-cache-ttl=2h
+  hive.s3.max-connections=1000
+  delta.metadata.cache-size=2000
+  delta.metadata.cache-ttl=2h
+  delta.metadata.live-files.cache-size=10GB
+  delta.metadata.live-files.cache-ttl=2h
+  delta.enable-non-concurrent-writes=true
+  delta.unique-table-location=false
+  delta.compression-codec=SNAPPY
+  delta.table-statistics-enabled=true
+  delta.extended-statistics.enabled=true
+
+# Array of EnvVar (https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envvar-v1-core)
+env: []
+
+# Array of EnvFromSource (https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envfromsource-v1-core)
+envFrom: []
+
+initContainers: {}
+  # coordinator:
+  #   - name: init-coordinator
+  #     image: busybox:1.28
+  #     imagePullPolicy: IfNotPresent
+  #     command: ['sh', '-c', "until nslookup myservice.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for myservice; sleep 2; done"]
+  # worker:
+  #   - name: init-worker
+  #     image: busybox:1.28
+  #     command: ['sh', '-c', 'echo The worker is running! && sleep 3600']
+
+sidecarContainers: {}
+#   coordinator:
+#     - name: side-coordinator
+#       image: busybox:1.28
+#       imagePullPolicy: IfNotPresent
+#       command: ['sleep', '1']
+#   worker:
+#     - name: side-worker
+#       image: busybox:1.28
+#       imagePullPolicy: IfNotPresent
+#       command: ['sleep', '1']
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: "OnRootMismatch"
+
+shareProcessNamespace:
+  coordinator: false
+  worker: false
+
+service:
+  type: ClusterIP
+  port: 8080
+
+auth: {}
+  # Set username and password
+  # https://trino.io/docs/current/security/password-file.html#file-format
+  # passwordAuth: "username:encrypted-password-with-htpasswd"
+  # or set the name of a secret containing this file in the password.db key
+  # passwordAuthSecret: "trino-password-authentication"
+  # Set users' groups
+  # https://trino.io/docs/current/security/group-file.html#file-format
+  # refreshPeriod: 5s
+  # groups: "group_name:user_1,user_2,user_3"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # Annotations to add to the service account
+  annotations: {}
+
+secretMounts: []
+  # - name: sample-secret
+  #   secretName: sample-secret
+  #   path: /secrets/sample.json
+
+coordinator:
+  jvm:
+    maxHeapSize: 40500m
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+
+  config:
+    memory:
+      heapHeadroomPerNode: 12150MB
+    query:
+      maxMemoryPerNode: 12150MB
+
+  additionalJVMConfig: {}
+
+  additionalExposedPorts: {}
+
+  resources:
+    requests:
+      cpu: 15000m
+      memory: 55000Mi
+    limits:
+      memory: 55000Mi
+
+  livenessProbe: {}
+    # initialDelaySeconds: 20
+    # periodSeconds: 10
+    # timeoutSeconds: 5
+    # failureThreshold: 6
+    # successThreshold: 1
+  readinessProbe: {}
+    # initialDelaySeconds: 20
+    # periodSeconds: 10
+    # timeoutSeconds: 5
+    # failureThreshold: 6
+    # successThreshold: 1
+
+  nodeSelector:
+    dedicated: trino
+
+  tolerations:
+  - key: "dedicated"
+    value: "trino"
+
+  affinity: {}
+
+  additionalConfigFiles: {}
+
+  annotations: {}
+
+  labels: {}
+
+  secretMounts: []
+    # - name: sample-secret
+    #   secretName: sample-secret
+    #   path: /secrets/sample.json
+  metrics: {}
+#    jmxRmiRegistryPort: 9080
+#    jmxRmiServerPort: 9081
+#    exportPort: 9099 # the important one
+#    image: 854884966480.dkr.ecr.eu-central-1.amazonaws.com/cardoai-de-dv-de-ecr-repository-jmx-exporter-sidecar:v1
+#    imagePullPolicy: IfNotPresent
+
+worker:
+  jvm:
+    maxHeapSize: 40500m
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+
+  config:
+    memory:
+      heapHeadroomPerNode: 12150MB
+    query:
+      maxMemoryPerNode: 12150MB
+
+  additionalJVMConfig: {}
+
+  additionalExposedPorts: {}
+
+  resources:
+    requests:
+      cpu: 15000m
+      memory: 55000Mi
+    limits:
+      memory: 55000Mi
+
+  livenessProbe: {}
+    # initialDelaySeconds: 20
+    # periodSeconds: 10
+    # timeoutSeconds: 5
+    # failureThreshold: 6
+    # successThreshold: 1
+  readinessProbe: {}
+    # initialDelaySeconds: 20
+    # periodSeconds: 10
+    # timeoutSeconds: 5
+    # failureThreshold: 6
+    # successThreshold: 1
+
+  nodeSelector:
+    dedicated: trino
+
+  tolerations:
+  - key: "dedicated"
+    value: "trino"
+
+  affinity: {}
+
+  additionalConfigFiles: {}
+
+  annotations: {}
+
+  labels: {}
+
+  secretMounts: []
+    # - name: sample-secret
+    #   secretName: sample-secret
+    #   path: /secrets/sample.json
+  metrics: {}
+#    jmxRmiRegistryPort: 9080
+#    jmxRmiServerPort: 9081
+#    exportPort: 9099 # the important one
+#    image: 854884966480.dkr.ecr.eu-central-1.amazonaws.com/cardoai-de-dv-de-ecr-repository-jmx-exporter-sidecar:v1
+#    imagePullPolicy: IfNotPresent
+
+kafka:
+  mountPath: "/etc/trino/schemas"
+  tableDescriptions: {}
+    # Custom kafka table descriptions that will be mounted in mountPath
+    # testschema.json: |-
+    #   {
+    #     "tableName": "testtable",
+    #     "schemaName": "testschema",
+    #     "topicName": "testtopic",
+    #     "key": {
+    #       "dataFormat": "json",
+    #       "fields": [
+    #         {
+    #           "name": "_key",
+    #           "dataFormat": "VARCHAR",
+    #           "type": "VARCHAR",
+    #           "hidden": "false"
+    #         }
+    #       ]
+    #     },
+    #     "message": {
+    #       "dataFormat": "json",
+    #       "fields": [
+    #         {
+    #           "name": "id",
+    #           "mapping": "id",
+    #           "type": "BIGINT"
+    #         },
+    #         {
+    #           "name": "test_field",
+    #           "mapping": "test_field",
+    #           "type": "VARCHAR"
+    #         }
+    #       ]
+    #     }
+    #   }
+commonLabels: {}  # Labels that get applied to every resource's metadata
+ingress:
+  extraAnnotations: {}
+  certificateArn: ""
+  hostname: ""
+
+networkPolicy: {}
+#  allowedCidrBlocks:
+#    - 192.168.1.0/24
+#    - 192.168.2.0/24
+#    - 10.0.0.0/16
+#  allowedNamespaces:
+#    - prometheus
+
+logsVolume:
+  storageClassName: efs
+  storageSize: 10Gi
+
+resourceGroups:
+  rootGroups:
+    - name: equalizer
+      maxQueued: 1000
+      hardConcurrencyLimit: 1000
+      softMemoryLimit: 100%
+      jmxExport: true
+    - name: not_equalizer
+      maxQueued: 100
+      hardConcurrencyLimit: 30
+      softMemoryLimit: 40%
+      jmxExport: true
+  selectors:
+    - user: equalizer
+      group: equalizer
+    - user: ".*"
+      group: not_equalizer
+
+sessionPropertyConfig:
+  - group: not-equalizer
+    sessionProperties:
+      query_max_execution_time: 5m

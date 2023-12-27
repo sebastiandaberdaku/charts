@@ -1,0 +1,74 @@
+{{- if or .Values.worker.metrics .Values.coordinator.metrics  }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "trino.metrics" . }}
+  labels:
+    app: {{ template "trino.name" . }}
+    chart: {{ template "trino.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+# a list of metrics is specified on https://trino.io/docs/current/admin/jmx.html
+# replace the :metric: structure with <metric> instead 
+    trino.yaml: |
+        {{- if .Values.worker.metrics.enabled }}
+        hostPort: localhost:{{ .Values.worker.metrics.jmxRmiRegistryPort}}
+        {{- else }}
+        hostPort: localhost:{{ .Values.coordinator.metrics.jmxRmiRegistryPort}}
+        {{- end }}
+        startDelaySeconds: 60
+        rules:
+          - pattern : ".*"
+          
+          - pattern : trino.execution<name=SqlTaskManager><>InputDataSize.OneMinute.Count
+            name: trino_coord_Input_bytes_sci
+
+          - pattern : trino.execution<name=SqlTaskManager><>InputPositions.OneMinute.Count
+            name: trino_coord_Input_rows
+          
+          - pattern : trino.execution<name=SqlTaskManager><>OutputDataSize.OneMinute.Count
+            name: trino_coord_Output_bytes_sci
+          
+          - pattern : trino.execution<name=SqlTaskManager><>OutputPositions.OneMinute.Count
+            name: trino_coord_Output_rows
+          
+          - pattern : trino.memory<type=ClusterMemoryPool, name=general><>TotalDistributedBytes
+            name: trino_TotalDistributedBytes
+          
+          - pattern : trino.memory<type=ClusterMemoryPool, name=general><>ReservedDistributedBytes
+            name: trino_ReservedDistributedBytes
+
+          - pattern : trino.execution<name=QueryManager><>FailedQueries.OneMinute.Count
+            name: trino_failed_queries
+          
+          - pattern : trino.execution<name=QueryManager><>RunningQueries
+            name: trino_running_queries
+
+          - pattern : trino.failuredetector<name=HeartbeatFailureDetector><>ActiveCount
+            name: trino_active_nodes
+
+          - pattern : trino.memory<type=ClusterMemoryPool, name=general><>FreeDistributedBytes
+            name: trino_cluster_free_memory
+          
+          - pattern : trino.execution<name=QueryExecution><>Executor.QueuedTaskCount
+            name: trino_queued_task_count
+
+          - pattern : trino.execution<name=QueryManager><>StartedQueries.FiveMinute.Count
+            name: trino_started_queries
+
+          - pattern : java.lang<type=Memory><HeapMemoryUsage>committed
+            name: trino_jvm_heap_memory_usage
+
+          - pattern : java.lang<type=Threading><>ThreadCount
+            name: trino_jvm_thread_count
+
+          - pattern : trino.memory<name=ClusterMemoryManager>QueriesKilledDueToOutOfMemory
+            name: trino_failed_queries_oom
+                        
+          - pattern : trino.execution<name=QueryManager>WallInputBytesRate.FiveMinutes.P90
+            name: trino_input_byte_rate
+        
+{{- end }}
+
+

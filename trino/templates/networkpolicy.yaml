@@ -1,0 +1,31 @@
+{{- if .Values.networkPolicy -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ template "trino.network-policy" . }}
+  labels:
+    app: {{ template "trino.name" . }}
+    chart: {{ template "trino.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: network-policy
+    {{- if .Values.commonLabels }}
+    {{- tpl (toYaml .Values.commonLabels) . | nindent 4 }}
+    {{- end }}
+spec:
+  podSelector: { }
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: { }  # Allow traffic from all pods within the same namespace
+    {{- range .Values.networkPolicy.allowedCidrBlocks }}
+        - ipBlock:
+            cidr: {{ . }}
+    {{- end }}
+    {{- range .Values.networkPolicy.allowedNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+    {{- end }}
+{{- end }}

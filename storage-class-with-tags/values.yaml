@@ -1,0 +1,22 @@
+nameOverride: ""
+fullnameOverride: ""
+
+storageClassName: my-custom-gp3-storage-class
+
+annotations:
+  argocd.argoproj.io/sync-wave: "-2"
+
+labels : {}
+#  foo: bar
+
+tags :
+  Company: cardoai
+  Team: Data Engineering
+  Owner: Data Engineering
+  Environment: Development
+  BusinessUnit: shared
+
+parameters:
+  encrypted: 'true'
+  fstype: ext4
+  type: gp3

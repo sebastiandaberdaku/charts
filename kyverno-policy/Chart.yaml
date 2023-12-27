@@ -1,0 +1,9 @@
+apiVersion: v2
+name: kyverno-policy
+description: This Helm chart installs a Kyverno Cluster Policy that forces nodeSelector and tolerations on all the pods of a given namespace.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Sebastian Daberdaku
+    email: sebastiandaberdaku@gmail.com

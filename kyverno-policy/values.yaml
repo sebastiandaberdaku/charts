@@ -1,0 +1,30 @@
+nameOverride: ""
+fullnameOverride: ""
+
+dynamicWorkloadNodeSelector: {}
+#  dedicated: team-name
+
+dynamicWorkloadTolerations: []
+#  - key: node.kubernetes.io/not-ready
+#    operator: Exists
+#    effect: NoExecute
+#    tolerationSeconds: 300
+#  - key: node.kubernetes.io/unreachable
+#    operator: Exists
+#    effect: NoExecute
+#    tolerationSeconds: 300
+#  - key: dedicated
+#    value: team-1
+#  - key: dedicated
+#    value: team-2
+#  - key: dedicated
+#    value: team-3
+
+staticWorkloadNodeSelector: {}
+staticWorkloadTolerations: []
+
+annotations:
+  argocd.argoproj.io/sync-wave: "-2"
+
+labels : {}
+#  foo: bar

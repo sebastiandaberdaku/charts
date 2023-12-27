@@ -1,0 +1,21 @@
+# Default values for spark-addon.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  name: airflow-spark
+  iamRoleArn: arn:aws:iam::123456789012:role/example-spark-iam-role
+  # Annotations to add to the service account
+  annotations: {}
+
+workerServiceAccount:
+  enabled: true
+  name: airflow-worker
+
+annotations: {}
+
+labels : {}
+#  foo: bar

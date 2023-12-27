@@ -1,0 +1,28 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.storageClassName }}
+  labels:
+    {{- include "storage-class-with-tags.labels" . | nindent 4 }}
+  annotations:
+    storageclass.kubernetes.io/is-default-class: 'false'
+    {{- with .Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+allowVolumeExpansion: true
+allowedTopologies: []
+mountOptions: []
+parameters:
+  {{- with .Values.tags }}
+  {{- $counter := 1 }}
+  {{- range $key, $value := . }}
+  tagSpecification_{{ $counter }}: "{{ $key }}={{ $value }}"
+  {{- $counter = add $counter 1 }}
+  {{- end }}
+  {{- end }}
+  {{- with .Values.parameters }}
+  {{- toYaml . | nindent 2}}
+  {{- end }}
+provisioner: ebs.csi.aws.com
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer

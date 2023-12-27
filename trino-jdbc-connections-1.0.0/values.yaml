@@ -1,0 +1,18 @@
+nameOverride: ""
+fullnameOverride: ""
+
+vaultSecrets: {}
+#  equalizer_core_staging:
+#    envNamePrefix: EQ_ST
+#    vaultMountPath: equalizer
+#    vaultSecretName: rds/equalizer_core_staging
+#  equalizer_core_production:
+#    envNamePrefix: EQ_PR
+#    vaultMountPath: equalizer
+#    vaultSecretName: rds/equalizer_core_production
+
+annotations:
+  argocd.argoproj.io/sync-wave: "-1"
+
+labels : {}
+#  foo: bar

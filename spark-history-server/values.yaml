@@ -1,0 +1,64 @@
+nameOverride: ""
+fullnameOverride: ""
+
+# Number of shs instances in Deployment
+replicaCount: 1
+# Docker image
+image: 
+  repository: apache/spark
+  pullPolicy: Always
+  tag: 3.5.0
+
+serviceAccount:
+  create: true
+  name: ~
+  annotations: {}
+
+ingress:
+  # Enable web ingress resource
+  enabled: true
+  # Annotations for the web Ingress
+  annotations: {}
+  # The path for the web Ingress
+  path: "/"
+  # The pathType for the above path (used only with Kubernetes v1.19 and above)
+  pathType: "ImplementationSpecific"
+  # The hostnames or hosts configuration for the web Ingress
+  hosts:
+     # The hostname for the web Ingress (can be templated)
+   - name: "test"
+     # configs for web Ingress TLS
+     tls:
+       # Enable TLS termination for the web Ingress
+       enabled: true
+       # the name of a pre-created Secret containing a TLS private key and certificate
+       secretName: ""
+  # The Ingress Class for the web Ingress (used only with Kubernetes v1.19 and above)
+  ingressClassName: ""
+
+port: 18080
+
+s3LogDirectory: ~
+awsCredentialsProvider: com.amazonaws.auth.WebIdentityTokenCredentialsProvider
+
+alb:
+  serviceAccount: ~
+  namespace: kube-system
+
+airflowOidcSecretName: ~
+
+labels: {}
+
+sparkDaemonMemory: 2g
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi

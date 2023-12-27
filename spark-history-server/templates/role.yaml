@@ -1,0 +1,19 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "shs.fullname" . }}
+  labels:
+    release: {{ .Release.Name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    {{- include "shs.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+       - ""
+    resourceNames:
+      - {{ .Values.airflowOidcSecretName }}
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch

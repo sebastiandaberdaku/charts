@@ -1,0 +1,118 @@
+{{- if gt (int .Values.server.workers) 0 }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "trino.worker" . }}
+  labels:
+    app: {{ template "trino.name" . }}
+    chart: {{ template "trino.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: worker
+    {{- if .Values.commonLabels }}
+    {{- tpl (toYaml .Values.commonLabels) . | nindent 4 }}
+    {{- end }}
+data:
+  node.properties: |
+    node.environment={{ .Values.server.node.environment }}
+    node.data-dir={{ .Values.server.node.dataDir }}
+    plugin.dir={{ .Values.server.node.pluginDir }}
+  {{- range $configValue := .Values.additionalNodeProperties }}
+    {{ $configValue }}
+  {{- end }}
+
+  jvm.config: |
+    -server
+    -agentpath:/usr/lib/trino/bin/libjvmkill.so
+    -Xmx{{ .Values.worker.jvm.maxHeapSize }}
+    -XX:+{{ .Values.worker.jvm.gcMethod.type }}
+    -XX:G1HeapRegionSize={{ .Values.worker.jvm.gcMethod.g1.heapRegionSize }}
+    -XX:+ExplicitGCInvokesConcurrent
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+ExitOnOutOfMemoryError
+    -XX:-OmitStackTraceInFastThrow
+    -XX:ReservedCodeCacheSize=512M
+    -XX:PerMethodRecompilationCutoff=10000
+    -XX:PerBytecodeRecompilationCutoff=10000
+    -Djdk.attach.allowAttachSelf=true
+    -Djdk.nio.maxCachedBufferSize=2000000
+    -XX:+UnlockDiagnosticVMOptions
+    # Reduce starvation of threads by GClocker, recommend to set about the number of cpu cores (JDK-8192647)
+    -XX:GCLockerRetryAllocationCount=32
+  {{- with .Values.worker.metrics }}
+    -Dcom.sun.management.jmxremote.rmi.port={{ .jmxRmiServerPort }}
+  {{- end }}
+  {{- range $configValue := .Values.worker.additionalJVMConfig }}
+    {{ $configValue }}
+  {{- end }}
+
+  config.properties: |
+    coordinator=false
+    log.annotation-file={{ .Values.server.config.path }}/log.annotations
+    log.format=json
+    log.path=var/log/server-${ENV:HOSTNAME}.log
+    http-server.log.path=var/log/http-request-${ENV:HOSTNAME}.log
+    http-server.http.port={{ .Values.service.port }}
+    query.max-memory={{ .Values.server.config.query.maxMemory }}
+    query.max-memory-per-node={{ .Values.worker.config.query.maxMemoryPerNode }}
+  {{- if .Values.worker.config.memory.heapHeadroomPerNode }}
+    memory.heap-headroom-per-node={{ .Values.worker.config.memory.heapHeadroomPerNode }}
+  {{- end }}
+    discovery.uri=http://{{ template "trino.fullname" . }}:{{ .Values.service.port }}
+    {{- with .Values.sharedSecret }}
+    internal-communication.shared-secret={{ . }}
+    {{- end }}
+  {{- range $configValue := .Values.additionalConfigProperties }}
+    {{ $configValue }}
+  {{- end }}
+  {{- with .Values.worker.metrics }}
+    jmx.rmiregistry.port={{ .jmxRmiRegistryPort }}
+    jmx.rmiserver.port={{ .jmxRmiServerPort }}
+  {{- end }}
+  {{ .Values.server.workerExtraConfig | trim | indent 4 }}
+
+  exchange-manager.properties: |
+    exchange-manager.name={{ .Values.server.exchangeManager.name }}
+  {{ if eq .Values.server.exchangeManager.name  "filesystem" }}
+    exchange.base-directories={{ .Values.server.exchangeManager.baseDir }}
+  {{- end }}  
+  {{- range $configValue := .Values.additionalExchangeManagerProperties }}
+    {{ $configValue }}
+  {{- end }}
+
+  log.properties: |
+    io.trino={{ .Values.server.log.trino.level }}
+  {{- range $configValue := .Values.additionalLogProperties }}
+    {{ $configValue }}
+  {{- end }}
+
+  log.annotations: |
+    environment={{ .Values.server.node.environment }}
+    host=${ENV:HOSTNAME}
+
+{{ if .Values.eventListenerProperties }}
+  event-listener.properties: |
+  {{- range $configValue := .Values.eventListenerProperties }}
+    {{ $configValue }}
+  {{- end }}
+{{ end }}
+
+{{- range $fileName, $fileContent := .Values.worker.additionalConfigFiles }}
+  {{ $fileName }}: |
+    {{- $fileContent | nindent 4 }}
+{{- end }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: schemas-volume-worker
+  labels:
+    {{- include "trino.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+data:
+  {{- range $key, $val := .Values.kafka.tableDescriptions }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}
+{{- end }}

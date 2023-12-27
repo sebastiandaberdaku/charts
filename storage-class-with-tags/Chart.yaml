@@ -1,0 +1,9 @@
+apiVersion: v2
+name: storage-class-with-tags
+description: This Helm chart installs a custom storage class that enforces EBS tagging.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Sebastian Daberdaku
+    email: sebastiandaberdaku@gmail.com

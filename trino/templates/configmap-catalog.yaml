@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "trino.catalog" . }}
+  labels:
+    app: {{ template "trino.name" . }}
+    chart: {{ template "trino.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    role: catalogs
+    {{- if .Values.commonLabels }}
+    {{- tpl (toYaml .Values.commonLabels) . | nindent 4 }}
+    {{- end }}
+data:
+  tpch.properties: |
+    connector.name=tpch
+    tpch.splits-per-node=4
+  tpcds.properties: |
+    connector.name=tpcds
+    tpcds.splits-per-node=4
+{{- range $catalogName, $catalogProperties := .Values.additionalCatalogs }}
+  {{ $catalogName }}.properties: |
+    {{- $catalogProperties | nindent 4 }}
+{{- end }}
+{{- range $catalogName, $catalogProperties := .Values.deltaLakeCatalogs }}
+  {{ $catalogName }}.properties: |
+    connector.name=delta_lake
+    {{- $.Values.defaultDeltaLakeCatalogProperties | nindent 4 }}
+    hive.metastore.glue.region={{- $catalogProperties.glue_aws_region }}
+    hive.metastore.glue.iam-role={{- $catalogProperties.glue_iam_role_arn }}
+    hive.s3.iam-role={{- $catalogProperties.s3_iam_role_arn }}
+{{- end }}
+
+

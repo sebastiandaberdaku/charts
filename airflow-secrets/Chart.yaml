@@ -1,9 +1,9 @@
 apiVersion: v2
-name: karpenter-extra
-description: A chart for managing Karpenter NodeClasses and NodePools
+name: secrets
+description: This Helm Chart deploys Kubernetes secrets required by Airflow.
 type: application
 version: 1.0.0
-appVersion: "1.0.3"
+appVersion: "1.0.0"
 maintainers:
   - name: Sebastian Daberdaku
     email: sebastiandaberdaku@gmail.com

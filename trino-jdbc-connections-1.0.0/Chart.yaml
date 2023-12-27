@@ -1,0 +1,9 @@
+apiVersion: v2
+name: jdbc-connections
+description: This Helm Chart deploys JDBC connections as Kubernetes secrets to be used by Trino.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Sebastian Daberdaku
+    email: sebastiandaberdaku@gmail.com

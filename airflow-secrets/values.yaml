@@ -1,0 +1,32 @@
+nameOverride: ""
+fullnameOverride: ""
+
+webserver:
+  secretName: airflow-webserver-secret-key
+  secretValue: some_secret
+
+redis:
+  passwordSecretName: airflow-redis-password
+  brokerUrlSecretName: airflow-broker-url
+  secretValue: some_secret
+  airflowReleaseName: airflow
+
+fernetKey:
+  secretName: airflow-fernet-key
+  secretValue: some_secret
+
+gitSshKey:
+  secretName: airflow-git-ssh-secret
+  vaultMountPath: team-name
+  vaultSecretName: airflow/airflow_openssh_key_pair
+
+oidc:
+  secretName: airflow-oauth2-client-creds
+  vaultMountPath: sensitive_information
+  vaultSecretName: airflow_shared/oidc
+
+annotations:
+  argocd.argoproj.io/sync-wave: "-1"
+
+labels : {}
+#  foo: bar

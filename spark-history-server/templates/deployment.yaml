@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shs.fullname" . }}
+  labels:
+    release: {{ .Release.Name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    {{- include "shs.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shs.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shs.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "shs.serviceAccountName" . }}
+      containers:
+        - name: spark-history-server
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.port }}
+          env:
+            - name: SPARK_DAEMON_MEMORY
+              value: {{ .Values.sparkDaemonMemory }}
+            - name: SPARK_HISTORY_OPTS
+              value: >-
+                -Dspark.history.ui.port={{ .Values.port }}
+                -Dspark.history.fs.logDirectory={{ .Values.s3LogDirectory }}
+                -Dspark.hadoop.fs.s3a.aws.credentials.provider={{ .Values.awsCredentialsProvider }}
+                -Dspark.ui.retainedJobs=10000
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
