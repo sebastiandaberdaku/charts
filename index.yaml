@@ -3,10 +3,10 @@ entries:
   jdbc-connections:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2023-12-27T23:13:57.698461384+01:00"
+    created: "2023-12-27T23:14:39.865417998+01:00"
     description: This Helm Chart deploys JDBC connections as Kubernetes secrets to
       be used by Trino.
-    digest: aaeec033833f3e6da5b2c3e1850f82fe93a964c97d8f1d9cf037ba41533e8fc4
+    digest: 2136aaf67388083d213c88f82cab71ca1e19973aea8fbfcbee767fec0185711e
     maintainers:
     - email: sebastiandaberdaku@gmail.com
       name: Sebastian Daberdaku
@@ -18,7 +18,7 @@ entries:
   karpenter-extra:
   - apiVersion: v2
     appVersion: 1.0.3
-    created: "2023-12-27T23:13:57.7000576+01:00"
+    created: "2023-12-27T23:14:39.866463119+01:00"
     description: A chart for managing Karpenter NodeClasses and NodePools
     digest: fe9c6dc89f7152563a53fc1fac46ba8e68aade292ac2ac80554b72a79088788b
     maintainers:
@@ -32,7 +32,7 @@ entries:
   kyverno-policy:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2023-12-27T23:13:57.70063887+01:00"
+    created: "2023-12-27T23:14:39.866855881+01:00"
     description: This Helm chart installs a Kyverno Cluster Policy that forces nodeSelector
       and tolerations on all the pods of a given namespace.
     digest: 5b6f123067e33f8ada2144fd507b5d07a85557933a35ca4a6b756824d031a0d7
@@ -47,7 +47,7 @@ entries:
   secrets:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2023-12-27T23:13:57.70137563+01:00"
+    created: "2023-12-27T23:14:39.867329313+01:00"
     description: This Helm Chart deploys Kubernetes secrets required by Airflow.
     digest: 4422ad025bc66430ade4ba28d7181b1db0a4609d6fe686c2cc37c9cb3c1dcf3f
     maintainers:
@@ -61,7 +61,7 @@ entries:
   spark-addon:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2023-12-27T23:13:57.70200781+01:00"
+    created: "2023-12-27T23:14:39.867691649+01:00"
     description: Installs the Spark addons for Airflow.
     digest: 60f1d8b5e4a14e20ba1cd99a8aebbb0981598cf5c8707aaacb49e9cd9ded96e9
     maintainers:
@@ -75,7 +75,7 @@ entries:
   spark-connect:
   - apiVersion: v2
     appVersion: 3.5.0
-    created: "2023-12-27T23:13:57.703456793+01:00"
+    created: "2023-12-27T23:14:39.868532894+01:00"
     description: A Helm chart for deploying a Spark-Connect Server on Kubernetes
     digest: 3a08516ffe097f52cf1704ec704c00f59146e9363e7489d7c869c3038412c348
     maintainers:
@@ -89,7 +89,7 @@ entries:
   spark-history-server:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2023-12-27T23:13:57.704467794+01:00"
+    created: "2023-12-27T23:14:39.869119061+01:00"
     description: Spark History Server provides a web UI for completed and running
       Spark applications.
     digest: 75e78d46daa98c3a9bf933a015829ca4d2fc7ec78cdc912f7df7dda8190ce78a
@@ -104,7 +104,7 @@ entries:
   storage-class-with-tags:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2023-12-27T23:13:57.705097086+01:00"
+    created: "2023-12-27T23:14:39.869475794+01:00"
     description: This Helm chart installs a custom storage class that enforces EBS
       tagging.
     digest: 081808da004076ebed0906e0b94839da4c1eff201a0404752563e16c166d5e41
@@ -119,7 +119,7 @@ entries:
   trino:
   - apiVersion: v2
     appVersion: "435"
-    created: "2023-12-27T23:13:57.70955659+01:00"
+    created: "2023-12-27T23:14:39.872757995+01:00"
     description: Fast distributed SQL query engine for big data analytics that helps
       you explore your data universe
     digest: 7ac7e137b24338a2fcc00f45305e6fca87ef63e958a138d62e0f2fdea68c6726
@@ -136,4 +136,4 @@ entries:
     urls:
     - trino-0.15.0.tgz
     version: 0.15.0
-generated: "2023-12-27T23:13:57.697593002+01:00"
+generated: "2023-12-27T23:14:39.864916824+01:00"
